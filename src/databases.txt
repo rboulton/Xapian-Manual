@@ -251,10 +251,10 @@ Auto
 ----
 
 If you look at the Xapian API documentation, you'll notice that there are also
-"Auto::
+"Auto::"
 
-The Multi "backend
------------------
+The Multi "backend"
+-------------------
 
 This backend is
 
