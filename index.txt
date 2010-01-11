@@ -22,7 +22,9 @@ Documents
  - Terms, data, values.
  - Dos and Don'ts
  - Building documents.
+ - Adding documents.
  - Modifying documents.
+ - Deleting documents.
 
 Searches
  - A basic search.

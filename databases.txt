@@ -1,0 +1,264 @@
+=========
+Databases
+=========
+
+Pretty much all Xapian operations revolve around a Xapian `database`.  Before
+performing a search, details of the documents being searched need to be put
+into the database - the search process then refers to the database to
+determine the best matches for a given query.  The process of putting
+documents into the database is usually referred to as indexing.
+
+Creating and opening databases
+==============================
+
+Databases can be opened for reading only, or for reading and writing.  A
+database reader is represented by a Xapian::Database object, and a database
+writer is represented by a Xapian::WritableDatabase object.  Note that
+Xapian::WritableDatabase is a subclass of Xapian::Database, so it's possible
+to do all operations that it's possible to do on a Xapian::Database on a
+Xapian::WritableDatabase.  For example, a search can be performed on a
+Xapian::WritableDatabase.
+
+The easiest way to create a new database is simply to call the
+Xapian::WritableDatabase constructor:
+
+{{{
+    Xapian::WritableDatabase db("myfirstdb", Xapian::DB_CREATE);
+}}}
+
+This will create a new database, using the default database format, at the
+path "myfirstdb" (relative to the current working directory).  The DB_CREATE
+flag tells the constructor to create a new database: an exception will be
+raised if a database (or anything else) already exists at the specified path.
+Other available flags are:
+
+ - DB_CREATE_OR_OPEN: like DB_CREATE, but will simply open the database at the
+   specified path if it already exists.
+ - DB_CREATE_OR_OVERWRITE: like DB_CREATE, but will overwrite the database at
+   the specfied path if it already exists.
+ - DB_OPEN: the database will be opened if it already exists, but if it
+   doesn't exist an exception will be raised.
+
+To open a database for reading, use the Xapian::Database constructor:
+
+{{{
+    Xapian::Database db_readonly("myfirstdb");
+}}}
+
+This will open the database for reading only, and raise an exception if no
+database exists at the specified path.
+
+There are various different formats of database; if you want a format other
+than the default format for some reason, there are special factory methods
+available to create such databases - see the section on "Database formats" for
+details.  The Xapian::Database constructor will automatically determine the
+format of the database at the path supplied and open it (assuming the format
+is recognised).  Similarly, the Xapian::WritableDatabase constructors, when
+supplied with flags which open existing databases (ie, Xapian::DB_OPEN or
+Xapian::DB_CREATE_OR_OPEN) will also automatically determine the format and
+open it.
+
+If you just want to get on with adding documents to a database, you can skip
+to the next chapter on "Documents" now.  There are lots of things to be aware
+of about databases when building a production-ready system on top of Xapian,
+though, so come back and read the rest of this chapter later!
+
+Concurrency
+===========
+
+ - Multiple readers, single writer.
+ - Most Xapian backends support a multi version concurrency model.  When a
+   database is opened for reading, a static version of the database is
+   referenced by the reader.  Updates may be made to the database, and will
+   not be visibile to the reader.
+ - Errors if too many updates.
+
+Locking
+-------
+
+ - note about there being a subprocess.
+
+Multiple databases
+==================
+
+ - note about not being able to open multidbs for writing
+ - opening
+ - docid mapping
+
+Remote databases
+================
+
+ - rationale
+ - running the server
+   - note about using a stub database to serve multiple databases together
+ - opening
+
+Stub databases
+==============
+
+ - Description of them, and their format.
+ - One use is for flipping - see section below.
+ - Also used by the replication subsystem.
+ - Also for merging a small "recent changes" database with a large "archive"
+   database.
+ - Also for building a collection of databases for remote searching
+
+Flipping databases
+==================
+
+It is often useful to update a database by building a new database containing
+an updated version of the data, and flipping from the old version to the new
+version, so that newly opened readers start picking up the new version of the
+database.  This can be done to great effect, but there are several things to
+be aware of if you are performing searches in parallel with this change.
+
+Obviously, deleting the old database and copying or moving a new database into
+place would leave a window of time in which any readers trying to open the
+database would find files missing, producing Xapian::DatabaseOpeningError
+errors.  If you simply copy or replace the individual files, you may get even
+more subtle errors; Xapian will usually notice the discrepancy if some files
+from an old version of the database and some from a new version are present,
+but may not always do so, and may well raise Xapian::DatabaseCorruptError if
+it becomes confused.
+
+There are actually very few filesystem operations which can be used to allow
+an "atomic" change to be made to a database.  Fortunately, there is one such
+operation: moving a file to a new path, replacing any copies of the database
+at that path, is an atomic operation on almost all systems.  [FIXME - check
+for details of any systems where it isn't.]  All processes will either see the
+filesystem as it was before the move/replace, or as it was afterwards;
+there'll never be a partial modification visible.
+
+The recommended approach for flipping database versions is to use a stub
+database to refer to the current version of the database.  One approach is
+be to append a timestamp to the end of each newly created database, and then
+to create a stub database file pointing to the latest database.  Once the
+newly created database is in place and ready to be used, the newly created
+stub database file can be moved to replace the old stub database file,
+taking advantage of the atomic nature of this operation to ensure that a
+reader would never see a partially flipped database.
+
+On POSIX filesystems, the contents of an open file can be accessed even if the
+original file on disk has been unlinked.  An open Xapian database maintains an
+open filehandle to all the files holding the database contents.  This allows
+the old version of the database to be unlinked immediately after the stub
+database file has been updated, without fear that an open reader will be
+affected by this deletion.
+
+On non POSIX filesystems (specifically, on Windows), an error will be raised
+by a reader if the files it was using are deleted before it completes.  On
+such systems, you should either wait for all readers using the old version to
+close, or be prepared to catch errors due to the deletion.
+
+Don't be tempted to use a symlink instead of a stub database to switch between
+database versions.  Xapian doesn't resolve all symlinks on the path to a
+database before opening it, so if the symlink is changed while the database is
+being opened, a mixture of old and new files may be opened.
+
+Reopening
+=========
+
+ - warning about stubs not being re-read.
+
+Database backend formats
+========================
+
+Xapian databases store data in custom formats which allow searches to be
+performed extremely quickly.  This typically involves storing a mapping from
+all the words in the documents to the list of documents those words occurred
+in, together with various statistics about these occurrences.  It may also
+involve storing the full text of the documents, so that result text can be
+displayed.
+
+A great deal of compression is used to store this information, but the
+database sizes are still often comparable to the size of the input data, since
+they hold both the original data, and the "inverted" data.
+[footnote: database sizes depend heavily on the way in which documents are
+processed, and what information is actually stored - this should be matched to
+the types of searches which need to be supported on the data, to avoid storing
+unwanted information.  See <FIXME - later section> for details of this].
+
+Xapian databases are usually held in the filesystem, as a set of files in a
+database directory, but may also be held in memory, or on a remote machine.
+
+Xapian supports several different database `backends`.  For any particular
+release of Xapian, one of these backends will be the default backend, and will
+be used when a database is created if you don't choose a particular backend
+format.  Some backends are supported for backwards compatibility, some provide
+support for distributed searching, or keeping a database in memory, and others
+may be experimental.
+
+At the time of writing, the current backends are available in supported
+versions of Xapian.  Note that Xapian may be compiled without support for some
+of these databases.
+
+The Flint backend
+-----------------
+
+In the 1.0.x release series, Flint was the default backend.  It is still
+supported for backwards compatibility in the 1.2.x release series.  Support is
+likely to be dropped at the end of the 1.2.x release series.
+
+To open a Flint database explicitly, use the Flint::open() method.
+
+The Chert backend
+-----------------
+
+The Chert backend is the default backend in the 1.2.x release series.  It was
+based on the Flint database format, but portions of it have been modified
+heavily to improve performance.  Database sizes with flint are considerably
+smaller, and various additional statistics are stored which allow searches to
+be performed faster.  Some features, such as range searches, can be performed
+considerably more efficiently with Chert than with Flint, due to the format
+changes.
+
+
+The Brass backend
+-----------------
+
+The Brass backend is currently in development - it is expected to stabilise
+for the 1.4.x release series.  Before that point, you should probably only use
+the Brass backend if you are working on development or testing of it.  The
+format of Brass databases may be changed with little or no warning until it
+has stabilised.
+
+The InMemory backend
+--------------------
+
+As suggested by its name, the InMemory backend holds its databases in memory,
+rather than on disk.  This makes it a reasonable candidate for use when you
+have a small number of documents, and want to build a temporary database from
+them to perform a few searches.
+
+Unfortunately, the current implementation is not very efficient - the backend
+was implemented mainly for testing.  This is actually the oldest backend in
+Xapian!  The backend has fairly poor performance, and doesn't have support for
+some recently added features.  It also doesn't support transations at all.
+
+If there is sufficient demand, this backend is likely to be re-implemented at
+some point, possibly using shared memory to allow multiple processes to access
+the database, and using the data format of one of the on-disk databases.  Work
+has not begun on this at the time of writing: as ever, contact the Xapian
+developers if you would like to help!
+
+The Remote backend
+------------------
+
+This backend is used to manage searches on databases held on other machines.
+To use this backend, 
+
+Auto
+----
+
+If you look at the Xapian API documentation, you'll notice that there are also
+"Auto::
+
+The Multi "backend
+-----------------
+
+This backend is
+
+Replication
+===========
+
+
