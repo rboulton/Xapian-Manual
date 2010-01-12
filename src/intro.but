@@ -1,6 +1,6 @@
 \C{getting-started} Getting started
 
-Xapian is a code library, writting in C++.  As such, the native interface is
+Xapian is a code library, written in C++.  As such, the native interface is
 written in C++, but thin wrappers around the C++ interface are provided for
 many popular languages.  The syntax of code written using these wrappers is
 obviously different to that written in C++, but the basic concepts are the
