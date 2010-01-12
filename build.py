@@ -3,6 +3,7 @@
 import os
 import shutil
 import subprocess
+import sys
 
 sources = (
     "intro",
@@ -30,4 +31,9 @@ def generate(sources, outdir):
     subprocess.call(cmd)
 
 if __name__ == '__main__':
-    generate(sources, "output")
+    if len(sys.argv) > 1:
+        outdir = sys.argv[1]
+    else:
+        outdir = "output"
+
+    generate(sources, outdir)
