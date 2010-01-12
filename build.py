@@ -14,6 +14,13 @@ sources = (
     "indexstrategy",
     "facets",
     "future",
+    "python",
+    "php",
+    "perl",
+    "ruby",
+    "java",
+    "csharp",
+    "tcl",
 )
 
 def generate(sources, outdir):
