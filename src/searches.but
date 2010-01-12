@@ -1,0 +1,8 @@
+\C{searches} Searches
+
+ - A basic search.
+ - The Enquire object.
+ - The QueryParser object.
+ - The Query object.
+ - Relevance Expansion.
+   - RSet, Expand.

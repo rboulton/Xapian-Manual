@@ -1,6 +1,4 @@
-=========
-Databases
-=========
+\C{databases} Databases
 
 Pretty much all Xapian operations revolve around a Xapian `database`.  Before
 performing a search, details of the documents being searched need to be put
@@ -8,8 +6,7 @@ into the database - the search process then refers to the database to
 determine the best matches for a given query.  The process of putting
 documents into the database is usually referred to as indexing.
 
-Creating and opening databases
-==============================
+\H{databases-creating} Creating and opening databases
 
 Databases can be opened for reading only, or for reading and writing.  A
 database reader is represented by a Xapian::Database object, and a database
@@ -22,9 +19,7 @@ Xapian::WritableDatabase.
 The easiest way to create a new database is simply to call the
 Xapian::WritableDatabase constructor:
 
-{{{
-    Xapian::WritableDatabase db("myfirstdb", Xapian::DB_CREATE);
-}}}
+\c Xapian::WritableDatabase db("myfirstdb", Xapian::DB_CREATE);
 
 This will create a new database, using the default database format, at the
 path "myfirstdb" (relative to the current working directory).  The DB_CREATE
@@ -32,18 +27,18 @@ flag tells the constructor to create a new database: an exception will be
 raised if a database (or anything else) already exists at the specified path.
 Other available flags are:
 
- - DB_CREATE_OR_OPEN: like DB_CREATE, but will simply open the database at the
-   specified path if it already exists.
- - DB_CREATE_OR_OVERWRITE: like DB_CREATE, but will overwrite the database at
-   the specfied path if it already exists.
- - DB_OPEN: the database will be opened if it already exists, but if it
-   doesn't exist an exception will be raised.
+\b DB_CREATE_OR_OPEN: like DB_CREATE, but will simply open the database at the
+specified path if it already exists.
+
+\b DB_CREATE_OR_OVERWRITE: like DB_CREATE, but will overwrite the database at
+the specfied path if it already exists.
+
+\b DB_OPEN: the database will be opened if it already exists, but if it doesn't
+exist an exception will be raised.
 
 To open a database for reading, use the Xapian::Database constructor:
 
-{{{
-    Xapian::Database db_readonly("myfirstdb");
-}}}
+\c Xapian::Database db_readonly("myfirstdb");
 
 This will open the database for reading only, and raise an exception if no
 database exists at the specified path.
@@ -63,48 +58,52 @@ to the next chapter on "Documents" now.  There are lots of things to be aware
 of about databases when building a production-ready system on top of Xapian,
 though, so come back and read the rest of this chapter later!
 
-Concurrency
-===========
+\H{concurrency} Concurrency
 
- - Multiple readers, single writer.
- - Most Xapian backends support a multi version concurrency model.  When a
-   database is opened for reading, a static version of the database is
-   referenced by the reader.  Updates may be made to the database, and will
-   not be visibile to the reader.
- - Errors if too many updates.
+\b Multiple readers, single writer.
 
-Locking
--------
+\b Most Xapian backends support a multi version concurrency model.  When a
+database is opened for reading, a static version of the database is referenced
+by the reader.  Updates may be made to the database, and will not be visibile
+to the reader.
+
+\b Errors if too many updates.
+
+\S{locking} Locking
 
  - note about there being a subprocess.
 
-Multiple databases
-==================
+\H{databases-multiple} Multiple databases
 
  - note about not being able to open multidbs for writing
+
  - opening
+
  - docid mapping
 
-Remote databases
-================
+\H{databases-remote} Remote databases
 
  - rationale
+
  - running the server
+
    - note about using a stub database to serve multiple databases together
+
  - opening
 
-Stub databases
-==============
+\H{databases-stub} Stub databases
 
  - Description of them, and their format.
+
  - One use is for flipping - see section below.
+
  - Also used by the replication subsystem.
- - Also for merging a small "recent changes" database with a large "archive"
-   database.
+
+ - Also for merging a small "recent changes" database with a large "archive" database.
+
  - Also for building a collection of databases for remote searching
 
-Flipping databases
-==================
+\H{databases-flipping} Flipping databases
 
 It is often useful to update a database by building a new database containing
 an updated version of the data, and flipping from the old version to the new
@@ -155,13 +154,11 @@ database versions.  Xapian doesn't resolve all symlinks on the path to a
 database before opening it, so if the symlink is changed while the database is
 being opened, a mixture of old and new files may be opened.
 
-Reopening
-=========
+\H{databases-reopening} Reopening
 
  - warning about stubs not being re-read.
 
-Database backend formats
-========================
+\H{databases-backend-formats} Database backend formats
 
 Xapian databases store data in custom formats which allow searches to be
 performed extremely quickly.  This typically involves storing a mapping from
@@ -192,8 +189,7 @@ At the time of writing, the current backends are available in supported
 versions of Xapian.  Note that Xapian may be compiled without support for some
 of these databases.
 
-The Flint backend
------------------
+\S{databases-flint} The Flint backend
 
 In the 1.0.x release series, Flint was the default backend.  It is still
 supported for backwards compatibility in the 1.2.x release series.  Support is
@@ -201,8 +197,7 @@ likely to be dropped at the end of the 1.2.x release series.
 
 To open a Flint database explicitly, use the Flint::open() method.
 
-The Chert backend
------------------
+\S{databases-chert} The Chert backend
 
 The Chert backend is the default backend in the 1.2.x release series.  It was
 based on the Flint database format, but portions of it have been modified
@@ -212,9 +207,7 @@ be performed faster.  Some features, such as range searches, can be performed
 considerably more efficiently with Chert than with Flint, due to the format
 changes.
 
-
-The Brass backend
------------------
+\S{databases-brass} The Brass backend
 
 The Brass backend is currently in development - it is expected to stabilise
 for the 1.4.x release series.  Before that point, you should probably only use
@@ -222,8 +215,7 @@ the Brass backend if you are working on development or testing of it.  The
 format of Brass databases may be changed with little or no warning until it
 has stabilised.
 
-The InMemory backend
---------------------
+\S{databases-inmemory} The InMemory backend
 
 As suggested by its name, the InMemory backend holds its databases in memory,
 rather than on disk.  This makes it a reasonable candidate for use when you
@@ -241,24 +233,11 @@ the database, and using the data format of one of the on-disk databases.  Work
 has not begun on this at the time of writing: as ever, contact the Xapian
 developers if you would like to help!
 
-The Remote backend
-------------------
-
-This backend is used to manage searches on databases held on other machines.
-To use this backend, 
-
-Auto
-----
+\S{databases-auto} Auto
 
 If you look at the Xapian API documentation, you'll notice that there are also
 "Auto::"
 
-The Multi "backend"
--------------------
-
-This backend is
-
-Replication
-===========
+\H{databases-replication} Replication
 
 
