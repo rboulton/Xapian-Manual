@@ -1,5 +1,14 @@
 \C{documents} Documents
 
+A document in Xapian is simply an item which is returned by a search.  When
+building a new search system, the first decision to take is usually to decide
+what the documents in your system are going to be.  For example, for a search
+over a website, there might be one document for each page of the site.
+However, you could instead choose to use one document for each paragraph of
+each page, or to group pages together into subjects and have one document for
+each subject.  Choosing the best way to divide your data up is discussed in
+detail in \k{index-strategy}.
+
 \H{terms-data-values} Terms, data, values.
 
 \H{docs-dos-and-donts} Dos and Don'ts

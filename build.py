@@ -11,6 +11,7 @@ sources = (
     "documents",
     "searches",
     "customsearches",
+    "indexstrategy",
     "facets",
     "future",
 )
