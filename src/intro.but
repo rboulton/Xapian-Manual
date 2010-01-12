@@ -1,11 +1,23 @@
 \C{getting-started} Getting started
 
+Xapian is a code library, writting in C++.  As such, the native interface is
+written in C++, but thin wrappers around the C++ interface are provided for
+many popular languages.  The syntax of code written using these wrappers is
+obviously different to that written in C++, but the basic concepts are the
+same.
+
+In this manual, example code will generally be presented in C++.  If you are
+using one of the other languages, you should generally be able to get the
+concepts by reading this code, even if you don't know C++.  There are chapters
+later in the book giving a specific introduction for users of particular
+languages.
+
 \H{installation} Installation
 
-\H{simple-index-search} Simple index and search example
+\H{simple-index-search} Simple example
 
 \H{information-retrieval} Information Retrieval
 
 \H{Alternatives} Alternatives
 
-Why not just use RDBMS full text search options?
+eg, Why not just use RDBMS full text search options?
