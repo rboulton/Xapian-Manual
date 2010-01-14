@@ -72,12 +72,13 @@ This is very convenient in many situations - it means that it is not necessary
 to keep track of whether a database object has been deleted yet when using
 iterators or other objects derived from it.  However, it can result in the
 database remaining open longer than expected, causing problems if you try and
-open the database for writing again.
+open the database for writing again before the database has been closed.
 
 For this reason, databases support an explicit \c{close()} method.  This can be
-called to explicitly close a database - if an attempt is made to access the
-database after closing, it will usually result in a \c{Xapian::DatabaseError}
-exception being raised.
+called to close a database immediately, without waiting for all references to
+the database to be deleted.  If an attempt is made to access the database after
+closing, it will usually result in a \c{Xapian::DatabaseError} exception being
+raised.
 
 \H{concurrency} Concurrency
 
