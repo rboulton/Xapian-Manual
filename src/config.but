@@ -1,0 +1,5 @@
+\cfg{html-contents-filename}{index.html}
+\cfg{html-index-filename}{bookindex.html}
+\cfg{html-template-filename}{%k.html}
+\cfg{html-template-fragment}{%k}
+\cfg{html-contents-depth}{0}{2}

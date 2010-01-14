@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 sources = (
+    "config",
     "intro",
     "databases",
     "documents",
