@@ -13,6 +13,7 @@ sources = (
     "customsearches",
     "textprocessing",
     "indexstrategy",
+    "datastructures",
     "facets",
     "future",
     "python",
