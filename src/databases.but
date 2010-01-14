@@ -1,42 +1,42 @@
 \C{databases} Databases
 
-Pretty much all Xapian operations revolve around a Xapian `database`.  Before
+Pretty much all Xapian operations revolve around a Xapian \e{database}.  Before
 performing a search, details of the documents being searched need to be put
-into the database - the search process then refers to the database to
-determine the best matches for a given query.  The process of putting
-documents into the database is usually referred to as indexing.
+into the database - the search process then refers to the database to determine
+the best matches for a given query.  The process of putting documents into the
+database is usually referred to as indexing.
 
 \H{databases-creating} Creating and opening databases
 
 Databases can be opened for reading only, or for reading and writing.  A
-database reader is represented by a Xapian::Database object, and a database
-writer is represented by a Xapian::WritableDatabase object.  Note that
-Xapian::WritableDatabase is a subclass of Xapian::Database, so it's possible
-to do all operations that it's possible to do on a Xapian::Database on a
-Xapian::WritableDatabase.  For example, a search can be performed on a
-Xapian::WritableDatabase.
+database reader is represented by a \c{Xapian::Database} object, and a database
+writer is represented by a \c{Xapian::WritableDatabase} object.  Note that
+\c{Xapian::WritableDatabase} is a subclass of \c{Xapian::Database}, so it's
+possible to do all operations that it's possible to do on a
+\c{Xapian::Database} on a \c{Xapian::WritableDatabase}.  For example, a search
+can be performed on a \c{Xapian::WritableDatabase}.
 
-The easiest way to create a new database is simply to call the
-Xapian::WritableDatabase constructor:
+The easiest way to \I{creating a database}create a new database is simply to
+call the \c{Xapian::WritableDatabase} constructor:
 
 \c Xapian::WritableDatabase db("myfirstdb", Xapian::DB_CREATE);
 
-This will create a new database, using the default database format, at the
-path "myfirstdb" (relative to the current working directory).  The DB_CREATE
+This will create a new database, using the default database format, at the path
+\q{myfirstdb} (relative to the current working directory).  The \cw{DB_CREATE}
 flag tells the constructor to create a new database: an exception will be
 raised if a database (or anything else) already exists at the specified path.
 Other available flags are:
 
-\b DB_CREATE_OR_OPEN: like DB_CREATE, but will simply open the database at the
-specified path if it already exists.
+\b \cw{DB_CREATE_OR_OPEN}: like \cw{DB_CREATE}, but will simply open the
+database at the specified path if it already exists.
 
-\b DB_CREATE_OR_OVERWRITE: like DB_CREATE, but will overwrite the database at
-the specfied path if it already exists.
+\b \cw{DB_CREATE_OR_OVERWRITE}: like \cw{DB_CREATE}, but will overwrite the
+database at the specfied path if it already exists.
 
-\b DB_OPEN: the database will be opened if it already exists, but if it doesn't
-exist an exception will be raised.
+\b \cw{DB_OPEN}: the database will be opened if it already exists, but if it
+doesn't exist an exception will be raised.
 
-To open a database for reading, use the Xapian::Database constructor:
+To \i{open a database for reading}, use the \c{Xapian::Database} constructor:
 
 \c Xapian::Database db_readonly("myfirstdb");
 
@@ -45,33 +45,87 @@ database exists at the specified path.
 
 There are various different formats of database; if you want a format other
 than the default format for some reason, there are special factory methods
-available to create such databases - see the section on "Database formats" for
+available to create such databases - see \k{databases-backend-formats} for
 details.  The Xapian::Database constructor will automatically determine the
-format of the database at the path supplied and open it (assuming the format
-is recognised).  Similarly, the Xapian::WritableDatabase constructors, when
-supplied with flags which open existing databases (ie, Xapian::DB_OPEN or
-Xapian::DB_CREATE_OR_OPEN) will also automatically determine the format and
-open it.
+format of the database at the path supplied and open it (assuming the format is
+recognised).  Similarly, the Xapian::WritableDatabase constructors, when
+supplied with an existing database, and appropriate flags (ie,
+\c{Xapian::DB_OPEN} or \c{Xapian::DB_CREATE_OR_OPEN}) will also automatically
+determine the format and open it.
 
-If you just want to get on with adding documents to a database, you can skip
-to the next chapter on "Documents" now.  There are lots of things to be aware
-of about databases when building a production-ready system on top of Xapian,
-though, so come back and read the rest of this chapter later!
+If you just want to get on with adding documents to a database, you can skip to
+the next chapter now.  There are lots of things to be aware of about databases
+when building a production-ready system on top of Xapian, though, so come back
+and read the rest of this chapter later!
+
+\S{databases-closing} Closing
+
+A writable database is closed automatically when both the
+\c{Xapian::WritableDatabase} object is deleted, and when any Xapian objects
+which are derived from the database object are closed.  For example, if a
+\c{Xapian::PostingIterator} has been created from the database, the database
+will not be closed until that iterator is deleted as well as the database
+object.  (See \k{posting-iterators} for more details on
+\c{Xapian::PostingIterator}).
+
+This is very convenient in many situations - it means that it is not necessary
+to keep track of whether a database object has been deleted yet when using
+iterators or other objects derived from it.  However, it can result in the
+database remaining open longer than expected, causing problems if you try and
+open the database for writing again.
+
+For this reason, databases support an explicit \c{close()} method.  This can be
+called to explicitly close a database - if an attempt is made to access the
+database after closing, it will usually result in a \c{Xapian::DatabaseError}
+exception being raised.
 
 \H{concurrency} Concurrency
 
-\b Multiple readers, single writer.
+\S{threading} Threading
 
-\b Most Xapian backends support a multi version concurrency model.  When a
-database is opened for reading, a static version of the database is referenced
-by the reader.  Updates may be made to the database, and will not be visibile
-to the reader.
+Xapian does not implement any explicit support for multi-threading.  On the
+other hand, it doesn't use any global state, so as long as you don't access any
+Xapian objects from multiple threads concurrently, it is safe to use Xapian in
+a multithreaded system.  Be aware, however, that some Xapian objects will keep
+references to each other - for example, a \c{Xapian::Document} object obtained
+from a \c{Xapian::Database} object using the \c{get_document()} method will
+maintain a reference to the original \c{Xapian::Database} object, so it is not
+safe to use the \c{Xapian::Document} object in a thread if another thread might
+be concurrently accessing the \c{Xapian::Database} object.
 
-\b Errors if too many updates.
+For these reasons, it is generally best to use any Xapian objects only in the
+thread in which they were created, and not to access them from multiple
+threads.  If you must pass objects between threads, consider using a mutex to
+ensure that only one thread accesses the object at a time.
+
+\S{multi-read-single-write} Multiple readers, single writer
+
+Most Xapian backends provide \q{multi version concurrency}.  This allows only a
+single writer to exist for each database at any given time, but allows multiple
+readers to exist concurrently (both with the writer, and with themselves).
+
+When a database is opened for reading, a static version of the database is
+referenced by the reader.  Updates which are made to the database will not be
+visible to the reader.
+
+Existing Xapian backends have a limitation to their \q{multi version
+concurrency} implementation - specifically, at most two versions can exist
+concurrently.  The reader will be able to access its static version of the
+database without limitations when only one change has been made and committed
+by the writer, but after the writer has made two changes, readers will receive
+a \c{Xapian::DatabaseModifiedError} if they attempt to access a part of the
+database which has changed.  In this situation, the reader may be updated to
+the latest version using the \c{reopen} method - see \k{databases-reopening}.
 
 \S{locking} Locking
 
- - note about there being a subprocess.
+With the disk-based Xapian backends, when a database is opened for writing, a
+lock is obtained on the database to ensure that no further writers are opened
+concurrently.  This lock will be released when the database writer is closed.
+
+One unusual feature of Xapian's locking mechanism (at least on POSIX operating
+systems) is that Xapian creates a subprocess to hold the lock, rather than
+holding it in the main process.  FIXME - explain why.
 
 \H{databases-multiple} Multiple databases
 
@@ -156,7 +210,31 @@ being opened, a mixture of old and new files may be opened.
 
 \H{databases-reopening} Reopening
 
- - warning about stubs not being re-read.
+Database readers access a static version of the database, and do not reflect
+updates to the database made since they were opened.  The version of the
+database accessed by the reader can be updated to the latest version by calling
+the \c{Xapian::Database::reopen()} method.  This is faster than closing the
+database and opening a fresh reader - especially in the case when no changes
+have been made.
+
+FIXME - talk about strategies to avoid the DatabaseModifiedError - eg, calling
+reopen before performing each search, putting searches into a loop which
+repeats if DatabaseModifiedError occurs, and ensuring that commits() don't
+happen with a shorter gap than the time searches take.
+
+When a \c{Xapian::DatabaseModifiedError} is received the reader can be updated
+to the latest version
+
+FIXME - add a warning about stubs not being re-read, and a link to the relevant
+ticket.
+
+\H{metadata} Metadata
+
+Storing metadata.
+
+Transational support.
+
+Example uses.
 
 \H{databases-backend-formats} Database backend formats
 
@@ -167,13 +245,13 @@ in, together with various statistics about these occurrences.  It may also
 involve storing the full text of the documents, so that result text can be
 displayed.
 
-A great deal of compression is used to store this information, but the
-database sizes are still often comparable to the size of the input data, since
-they hold both the original data, and the "inverted" data.
-[footnote: database sizes depend heavily on the way in which documents are
-processed, and what information is actually stored - this should be matched to
-the types of searches which need to be supported on the data, to avoid storing
-unwanted information.  See <FIXME - later section> for details of this].
+A great deal of compression is used to store this information, but the database
+sizes are still often comparable to the size of the input data, since they hold
+both the original data, and the "inverted" data.  Database sizes depend heavily
+on the way in which documents are processed, and what information is stored -
+this should be matched to the types of searches which need to be supported on
+the data, to avoid storing unwanted information.  See \k{index-strategy} for
+details of this.
 
 Xapian databases are usually held in the filesystem, as a set of files in a
 database directory, but may also be held in memory, or on a remote machine.
@@ -236,7 +314,7 @@ developers if you would like to help!
 \S{databases-auto} Auto
 
 If you look at the Xapian API documentation, you'll notice that there are also
-"Auto::"
+"Auto::"  FIXME - talk about this.
 
 \H{databases-replication} Replication
 
