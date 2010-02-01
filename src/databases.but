@@ -86,7 +86,7 @@ raised.
 
 Xapian does not implement any explicit support for multi-threading, and stores
 various pieces of state in each object.  This means that if you access a Xapian
-object, such as a \{Xapian::Database} from multiple threads, you are extremely
+object, such as a \c{Xapian::Database} from multiple threads, you are extremely
 likely to get a nasty error: your application will probably crash.  Don't do
 this.
 
