@@ -84,10 +84,15 @@ raised.
 
 \S{threading} Threading
 
-Xapian does not implement any explicit support for multi-threading.  On the
-other hand, it doesn't use any global state, so as long as you don't access any
-Xapian objects from multiple threads concurrently, it is safe to use Xapian in
-a multithreaded system.  Be aware, however, that some Xapian objects will keep
+Xapian does not implement any explicit support for multi-threading, and stores
+various pieces of state in each object.  This means that if you access a Xapian
+object, such as a \c{Xapian::Database} from multiple threads, you are extremely
+likely to get a nasty error: your application will probably crash.  Don't do
+this.
+
+On the other hand, Xapian doesn't use any global state, so as long as you don't
+access any Xapian objects concurrently, it is safe to use Xapian in a
+multithreaded system.  Be aware, however, that some Xapian objects will keep
 references to each other - for example, a \c{Xapian::Document} object obtained
 from a \c{Xapian::Database} object using the \c{get_document()} method will
 maintain a reference to the original \c{Xapian::Database} object, so it is not
@@ -98,6 +103,10 @@ For these reasons, it is generally best to use any Xapian objects only in the
 thread in which they were created, and not to access them from multiple
 threads.  If you must pass objects between threads, consider using a mutex to
 ensure that only one thread accesses the object at a time.
+
+Creating a \c{Xapian::Database} object is generally fairly cheap, but if you
+wish to avoid the overhead of creating one for each search, you could implement
+a thread-local cache of databases.
 
 \S{multi-read-single-write} Multiple readers, single writer
 

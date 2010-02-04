@@ -68,6 +68,46 @@ document "data" slot for this.
 
 \H{lazy-loading} Lazy loading.
 
-Issues related to ticket #423.
+In order to avoid unnecessary work, the contents of a \c{Xapian::Document}
+object derived from a database are not normally loaded from the database
+immediately when the document is obtained.  Instead, various parts of the
+document are loaded on demand.  This can give a nice efficiency boost in
+situations where only a part of the document is loaded.  For example, in the
+following code, only the \q{data} part of the document will be loaded; the
+termlist and values will not be accessed:
+
+\c Xapian::Database db("testdb");
+\c Xapian::Document doc = db.get_document(1);
+\c std::cout << doc.get_data() <<std::endl;
+
+This is normally entirely transparent to the user, but can have a visible
+effect in some very specific circumstances.  If the database the document is
+read from is a \c{Xapian::WritableDatabase}, two copies of the document are
+obtained from it, one copy is modified and written back to the database, and
+then the contents of the second copy are accessed, the second copy will contain
+the data that the second copy was set to.
+
+This might be clearer with a bit of example code:
+
+\c Xapian::WritableDatabase db("db", Xapian::DB_CREATE_OR_OPEN);
+\c Xapian::Document doc1 = db.get_document(1);
+\c Xapian::Document doc2 = db.get_document(1);
+\c doc1.set_data("hello");
+\c db.replace_document(1, doc1);
+\c std::cout << doc2.get_data() <<std::endl;
+\c // Output is "hello"
+
+If you want to force all the contents of a document to be read immediately, one
+easy way is to call the document's \c{serialise()} method.  This leads us
+nicely on to the next section!
 
 \H{serialising} Serialising.
+
+Sometimes, it's useful to convert a \c{Xapian::Document} into a flat binary
+representation.  This might be so that it can be sent over a network
+connection, or stored in a cache or a queue.
+
+FIXME - describe serialising and deserialising.  Note the lack of guarantee
+that the format is stable across different Xapian versions: shouldn't be used
+for long term storage.  Should be endian safe, though, so fine to read on
+different architectures.

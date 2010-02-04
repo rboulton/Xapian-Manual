@@ -4,5 +4,6 @@
  - The Enquire object.
  - The QueryParser object.
  - The Query object.
+   - Mention the special "" term which matches everything.
  - Relevance Expansion.
    - RSet, Expand.
